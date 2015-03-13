@@ -123,7 +123,7 @@ public class BranchSpec extends AbstractDescribableImpl<BranchSpec> implements S
         StringBuilder builder = new StringBuilder();
 
         // for legacy reasons (sic) we do support various branch spec format to declare remotes / branches
-        builder.append("(refs/heads/|refs/remotes/|remotes/)?");
+        builder.append("(refs/heads/|refs/remotes/|remotes/|origin/)?");
         
         // was the last token a wildcard?
         boolean foundWildcard = false;
