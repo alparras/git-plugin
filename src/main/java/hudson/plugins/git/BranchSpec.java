@@ -111,14 +111,6 @@ public class BranchSpec extends AbstractDescribableImpl<BranchSpec> implements S
             return Pattern.compile(regexSubstring);
         }
         
-        // if an unqualified branch was given add a "*/" so it will match branches
-        // from remote repositories as the user probably intended
-        String qualifiedName;
-        if (!expandedName.contains("**") && !expandedName.contains("/"))
-            qualifiedName = "*/" + expandedName;
-        else
-            qualifiedName = expandedName;
-        
         // build a pattern into this builder
         StringBuilder builder = new StringBuilder();
 
@@ -129,7 +121,7 @@ public class BranchSpec extends AbstractDescribableImpl<BranchSpec> implements S
         boolean foundWildcard = false;
         
         // split the string at the wildcards
-        StringTokenizer tokenizer = new StringTokenizer(qualifiedName, "*", true);
+        StringTokenizer tokenizer = new StringTokenizer(expandedName, "*", true);
         while (tokenizer.hasMoreTokens()) {
             String token = tokenizer.nextToken();
             
