@@ -111,25 +111,20 @@ public class BranchSpec extends AbstractDescribableImpl<BranchSpec> implements S
             return Pattern.compile(regexSubstring);
         }
         
-        // if an unqualified branch was given add a "*/" so it will match branches
-        // from remote repositories as the user probably intended
-        String qualifiedName;
-        if (!expandedName.contains("**") && !expandedName.contains("/"))
-            qualifiedName = "*/" + expandedName;
-        else
-            qualifiedName = expandedName;
         
         // build a pattern into this builder
         StringBuilder builder = new StringBuilder();
 
+        // if an unqualified branch was given it will match branches
+        // from remote repositories as the user probably intended
         // for legacy reasons (sic) we do support various branch spec format to declare remotes / branches
-        builder.append("(refs/heads/|refs/remotes/|remotes/)?");
+        builder.append("(refs/heads/|refs/remotes/|remotes/|origin/)?");
         
         // was the last token a wildcard?
         boolean foundWildcard = false;
         
         // split the string at the wildcards
-        StringTokenizer tokenizer = new StringTokenizer(qualifiedName, "*", true);
+        StringTokenizer tokenizer = new StringTokenizer(expandedName, "*", true);
         while (tokenizer.hasMoreTokens()) {
             String token = tokenizer.nextToken();
             
