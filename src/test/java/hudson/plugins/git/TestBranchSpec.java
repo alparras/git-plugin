@@ -156,4 +156,19 @@ public class TestBranchSpec extends TestCase {
     	assertFalse(m.matches("origin/release-201501011"));
     	assertFalse(m.matches("origin/release-20150101-something"));
     }
+
+    public void testBranchWithSlash() {
+    	// match pattern from Jenkins-27332
+    	BranchSpec m = new BranchSpec("feature/new_feature");
+    	assertFalse(m.matches("origin/feature"));
+    	assertFalse(m.matches("origin/features"));
+    	assertFalse(m.matches("origin/feature/some_feature"));
+    	assertFalse(m.matches("origin/new_feature"));
+    	assertFalse(m.matches("origin/feature/new_features"));
+    	assertFalse(m.matches("origin/feature/new_feature2"));
+    	assertFalse(m.matches("origin/feature/new_feature_new"));
+    	assertFalse(m.matches("origin/branch/feature/new_feature"));
+
+    	assertTrue(m.matches("origin/feature/new_feature"));
+    }
 }
