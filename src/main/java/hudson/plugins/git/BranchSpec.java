@@ -119,25 +119,26 @@ public class BranchSpec extends AbstractDescribableImpl<BranchSpec> implements S
 
         // if an unqualified branch was given add a "*/" so it will match branches
         // from remote repositories as the user probably intended
+        // wee need to detect if branches with slash contains a remote definition
+        // or is part of branch
         boolean addWildcard = false;
         String qualifiedName;
 
-        if(expandedName.startsWith("*/")){
-            addWildcard = false;
-        }
-        else if (!expandedName.contains("**") && !expandedName.contains("/"))
-            addWildcard = true;
-        else if(!expandedName.contains("**") && expandedName.contains("/")){
-            addWildcard = true;
-            //special case
-            if(expandedName.startsWith("origin/")){
-                addWildcard = false;
-            }
-            else {
-                for (String remote : supportedRemotes) {
-                    if(expandedName.startsWith(remote)){
+        if(!expandedName.startsWith("*/")){
+            if (!expandedName.contains("**")){
+                addWildcard = true;
+                if(expandedName.contains("/")){
+                    //special case
+                    if(expandedName.startsWith("origin/")){
                         addWildcard = false;
-                        break;
+                    }
+                    else {
+                        for (String remote : supportedRemotes) {
+                            if(expandedName.startsWith(remote)){
+                                addWildcard = false;
+                                break;
+                            }
+                        }
                     }
                 }
             }
@@ -156,7 +157,6 @@ public class BranchSpec extends AbstractDescribableImpl<BranchSpec> implements S
                 builder.append('|');
         }
         builder.append(")?");
-        System.err.println("builder:"+builder.toString());
 
         // was the last token a wildcard?
         boolean foundWildcard = false;
