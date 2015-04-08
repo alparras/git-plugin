@@ -9,6 +9,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.StringTokenizer;
 import java.util.regex.Pattern;
@@ -74,15 +75,15 @@ public class BranchSpec extends AbstractDescribableImpl<BranchSpec> implements S
 
     public List<String> filterMatching(Collection<String> branches, EnvVars env) {
         List<String> items = new ArrayList<String>();
-        
+
         for(String b : branches) {
             if(matches(b, env))
                 items.add(b);
         }
-        
+
         return items;
     }
-    
+
     public List<Branch> filterMatchingBranches(Collection<Branch> branches) {
         EnvVars env = new EnvVars();
         return filterMatchingBranches(branches, env);
@@ -90,19 +91,19 @@ public class BranchSpec extends AbstractDescribableImpl<BranchSpec> implements S
 
     public List<Branch> filterMatchingBranches(Collection<Branch> branches, EnvVars env) {
         List<Branch> items = new ArrayList<Branch>();
-        
+
         for(Branch b : branches) {
             if(matches(b.getName(), env))
                 items.add(b);
         }
-        
+
         return items;
     }
 
     private String getExpandedName(EnvVars env) {
         return env.expand(name);
     }
-    
+
     private Pattern getPattern(EnvVars env) {
         String expandedName = getExpandedName(env);
         // use regex syntax directly if name starts with colon
@@ -110,29 +111,61 @@ public class BranchSpec extends AbstractDescribableImpl<BranchSpec> implements S
             String regexSubstring = expandedName.substring(1, expandedName.length());
             return Pattern.compile(regexSubstring);
         }
-        
+        // branch spec format to declare remotes / branches
+        List<String> supportedRemotes = new ArrayList<String>();
+        supportedRemotes.add("refs/heads/");
+        supportedRemotes.add("refs/remotes/");
+        supportedRemotes.add("remotes/");
+
         // if an unqualified branch was given add a "*/" so it will match branches
         // from remote repositories as the user probably intended
+        boolean addWildcard = false;
         String qualifiedName;
-        if (!expandedName.contains("**") && !expandedName.contains("/"))
-            qualifiedName = "*/" + expandedName;
-        else
-            qualifiedName = expandedName;
-        
+
+        if(expandedName.startsWith("*/")){
+            addWildcard = false;
+        }
+        else if (!expandedName.contains("**") && !expandedName.contains("/"))
+            addWildcard = true;
+        else if(!expandedName.contains("**") && expandedName.contains("/")){
+            addWildcard = true;
+            //special case
+            if(expandedName.startsWith("origin/")){
+                addWildcard = false;
+            }
+            else {
+                for (String remote : supportedRemotes) {
+                    if(expandedName.startsWith(remote)){
+                        addWildcard = false;
+                        break;
+                    }
+                }
+            }
+        }
+        qualifiedName = addWildcard ? "*/" + expandedName : expandedName;
+
         // build a pattern into this builder
         StringBuilder builder = new StringBuilder();
 
         // for legacy reasons (sic) we do support various branch spec format to declare remotes / branches
-        builder.append("(refs/heads/|refs/remotes/|remotes/)?");
-        
+        builder.append('(');
+        for (Iterator<String> it = supportedRemotes.iterator(); it.hasNext();) {
+            String remote = it.next();
+            builder.append(remote);
+            if(it.hasNext())
+                builder.append('|');
+        }
+        builder.append(")?");
+        System.err.println("builder:"+builder.toString());
+
         // was the last token a wildcard?
         boolean foundWildcard = false;
-        
+
         // split the string at the wildcards
         StringTokenizer tokenizer = new StringTokenizer(qualifiedName, "*", true);
         while (tokenizer.hasMoreTokens()) {
             String token = tokenizer.nextToken();
-            
+
             // is this token is a wildcard?
             if (token.equals("*")) {
                 // yes, was the previous token a wildcard?
@@ -159,12 +192,12 @@ public class BranchSpec extends AbstractDescribableImpl<BranchSpec> implements S
                 builder.append(Pattern.quote(token));
             }
         }
-        
+
         // if the string ended with a wildcard add it now
         if (foundWildcard) {
             builder.append("[^/]*");
         }
-        
+
         return Pattern.compile(builder.toString());
     }
 
